@@ -28,8 +28,8 @@ on:
         required: false
         type: string
 
-    sectets:
-      github_token:
+    secrets:
+      repository_token:
         required: true
 
 jobs:
@@ -95,7 +95,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         id: cpr
         with:
-          token: ${{ secrets.github_token }}
+          token: ${{ secrets.repository_token }}
           commit-message: |
             Update modules
 
