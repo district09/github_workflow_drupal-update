@@ -31,11 +31,6 @@ on:
         description: The repman host for composer, if applicable
         required: false
         type: string
-      node-version:
-        description: The node version to install, used to build themes
-        required: false
-        type: string
-        default: 18
 
     secrets:
       repository_token:
@@ -69,11 +64,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.composer_github_token }}
           COMPOSER_AUTH_JSON: |
             ${{ steps.auth-json.outputs.auth_json }}
-
-      - name: Setup Node
-        uses: dcodeIO/setup-node-nvm@master
-        with:
-          node-version: ${{ inputs.node-version }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
@@ -119,10 +109,10 @@ jobs:
           write-mode: overwrite
 
       - name: Composer install
-        run: composer install
+        run: composer install --no-scripts
 
       - name: Install Drupal
-        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --config import
+        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --config-import
 
       - name: Execute config import
         run: vendor/bin/drush cim -y
