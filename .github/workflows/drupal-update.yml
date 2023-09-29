@@ -71,9 +71,7 @@ jobs:
             ${{ steps.auth-json.outputs.auth_json }}
 
       - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ inputs.node-version }}
+        run: nvm install ${{ inputs.node-version }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
