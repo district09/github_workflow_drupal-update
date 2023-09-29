@@ -31,6 +31,11 @@ on:
         description: The repman host for composer, if applicable
         required: false
         type: string
+      node-version:
+        description: The node version to install, used to build themes
+        required: false
+        type: string
+        default: 18
 
     secrets:
       repository_token:
@@ -64,6 +69,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.composer_github_token }}
           COMPOSER_AUTH_JSON: |
             ${{ steps.auth-json.outputs.auth_json }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ inputs.node-version }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
