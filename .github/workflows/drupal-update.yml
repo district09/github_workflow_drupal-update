@@ -35,7 +35,9 @@ on:
     secrets:
       repository_token:
         required: true
-      repman_token:
+      composer_repman_token:
+        required: false
+      composer_github_token:
         required: false
 
 jobs:
@@ -51,7 +53,7 @@ jobs:
         id: auth-json
         if: inputs.repman-host != ''
         run: |
-          echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ secrets.repman_token }}\"}}}" >> $GITHUB_OUTPUT
+          echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ secrets.composer_repman_token }}\"}}}" >> $GITHUB_OUTPUT
 
       - name: Setup PHP and composer
         uses: shivammathur/setup-php@v2
@@ -59,9 +61,9 @@ jobs:
           php-version: ${{ inputs.php-version }}
           extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml
         env:
-          GITHUB_TOKEN: ${{ secrets.repository_token }}
+          GITHUB_TOKEN: ${{ secrets.composer_github_token }}
           COMPOSER_AUTH_JSON: |
-            ${{ steps.auth-json.output.auth_json }}
+            ${{ steps.auth-json.outputs.auth_json }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
