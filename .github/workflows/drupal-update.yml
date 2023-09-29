@@ -1,0 +1,121 @@
+name: Update drupal project
+
+on:
+  workflow_call:
+    inputs:
+      drupal-install-profile:
+        description: The install profile to use when installing Drupal
+        required: false
+        type: string
+        default: minimal
+      drupal-web-root:
+        description: The web root (relative to the workspace root)
+        required: false
+        type: string
+        default: web
+      drupal-config-path:
+        description: The config sync path (relative to the web root)
+        required: false
+        type: string
+        default: ../config/sync
+      php-version:
+        description: The PHP version to run on
+        required: false
+        type: string
+        default: 8.1
+
+    sectets:
+      github_token:
+        required: true
+
+jobs:
+  update_drupal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP and composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml
+
+      - name: Shutdown Ubuntu MySQL (SUDO)
+        run: sudo service mysql stop
+
+      - name: Setup MySQL
+        uses: mirromutth/mysql-action@v1.1
+        with:
+          host port: 3800
+          mysql version: 8.0
+          mysql database: drupal
+          mysql user: drupal
+          mysql password: drupal
+
+      - name: Create settings.php
+        uses: chuhlomin/render-template@v1.7
+        with:
+          template: settings.php.tpl
+          result_path: ${{ github.workspace }}/${{ inputs.drupal-web-root }}/sites/default/settings.php
+          vars: |
+            config_path: ${{ inputs.drupal-config-path }}
+            hash: ${{ github.sha }}
+
+      - name: Composer install
+        run: composer install
+
+      - name: Install Drupal
+        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --config import
+
+      - name: Execute config import
+        run: vendor/bin/drush cim -y
+
+      - name: Update composer dependencies
+        id: composer-update
+        run: echo "commit_body=$(composer update | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' update-log.txt | tail -n +2 | head -n -1)" >> $GITHUB_OUTPUT
+
+      - name: Run Drupal updates
+        run: vendor/bin/drush updb -y
+
+      - name: Export config after updates
+        run: vendor/bin/drush cex -y
+
+      - name: Generate composer diff
+        id: composer-diff
+        uses: IonBazan/composer-diff-action@v1
+
+      - name: Create a pull request
+        uses: peter-evans/create-pull-request@v5
+        id: cpr
+        with:
+          token: ${{ secrets.github_token }}
+          commit-message: |
+            Update modules
+
+            ${{ steps.composer-update.outputs.commit_body }}
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          signoff: false
+          branch: feature/dependency-updates
+          delete-branch: true
+          title: Update modules
+          body: |
+            ${{ steps.composer-update.outputs.commit_body }}
+          labels: |
+            updates
+            automated pr
+          draft: true
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        if: ${{ steps.cpr.outputs.pull-request-number }}
+        with:
+          header: composer-diff
+          number: ${{ steps.cpr.outputs.pull-request-number }}
+          message: |
+            <details>
+            <summary>Composer package changes</summary>
+
+            ${{ steps.composer-diff.outputs.composer_diff }}
+
+            </details>
