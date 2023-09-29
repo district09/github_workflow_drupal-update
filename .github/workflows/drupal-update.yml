@@ -89,7 +89,7 @@ jobs:
               'database' => 'drupal',
               'username' => 'drupal',
               'password' => 'drupal',
-              'host' => 'localhost',
+              'host' => '127.0.0.1',
               'port' => '3306',
               'driver' => 'mysql',
               'prefix' => '',
@@ -107,6 +107,9 @@ jobs:
             $settings['entity_update_backup'] = TRUE;
             $settings['migrate_node_migrate_type_classic'] = FALSE;
           write-mode: overwrite
+
+      - name: Debug settings.php
+        run: cat ${{ github.workspace }}/${{ inputs.drupal-web-root }}/sites/default/settings.php
 
       - name: Composer install
         run: composer install --no-scripts
