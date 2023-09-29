@@ -27,11 +27,15 @@ on:
         description: The branch to check for updates, defaults to the default branch
         required: false
         type: string
+      repman-host:
+        description: The repman host for composer, if applicable
+        required: false
+        type: string
 
     secrets:
       repository_token:
         required: true
-      composer_auth_json:
+      repman_token:
         required: false
 
 jobs:
@@ -43,6 +47,12 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
+      - name: Set composer auth JSON
+        id: auth-json
+        if: inputs.repman-host != ''
+        run: |
+          echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ secrets.repman_token }}\"}}" >> $GITHUB_OUTPUT
+
       - name: Setup PHP and composer
         uses: shivammathur/setup-php@v2
         with:
@@ -51,7 +61,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.repository_token }}
           COMPOSER_AUTH_JSON: |
-            ${{ secrets.composer_auth_json }}
+            ${{ steps.auth-json.output.auth_json }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
