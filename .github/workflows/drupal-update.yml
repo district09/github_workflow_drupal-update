@@ -23,6 +23,10 @@ on:
         required: false
         type: string
         default: 8.1
+      branch:
+        description: The branch to check for updates, defaults to the default branch
+        required: false
+        type: string
 
     sectets:
       github_token:
@@ -34,6 +38,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Setup PHP and composer
         uses: shivammathur/setup-php@v2
