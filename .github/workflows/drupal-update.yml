@@ -71,7 +71,7 @@ jobs:
       - name: Setup MySQL
         uses: mirromutth/mysql-action@v1.1
         with:
-          host port: 3800
+          host port: 3306
           mysql version: 8.0
           mysql database: drupal
           mysql user: drupal
