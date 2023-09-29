@@ -51,7 +51,7 @@ jobs:
         id: auth-json
         if: inputs.repman-host != ''
         run: |
-          echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ secrets.repman_token }}\"}}" >> $GITHUB_OUTPUT
+          echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ secrets.repman_token }}\"}}}" >> $GITHUB_OUTPUT
 
       - name: Setup PHP and composer
         uses: shivammathur/setup-php@v2
