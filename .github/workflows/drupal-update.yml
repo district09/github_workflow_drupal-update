@@ -62,7 +62,7 @@ jobs:
       - name: Create settings.php
         uses: chuhlomin/render-template@v1.7
         with:
-          template: settings.php.tpl
+          template: ./settings.php.tpl
           result_path: ${{ github.workspace }}/${{ inputs.drupal-web-root }}/sites/default/settings.php
           vars: |
             config_path: ${{ inputs.drupal-config-path }}
