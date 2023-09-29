@@ -31,6 +31,8 @@ on:
     secrets:
       repository_token:
         required: true
+      composer_auth_json:
+        required: false
 
 jobs:
   update_drupal:
@@ -46,6 +48,10 @@ jobs:
         with:
           php-version: ${{ inputs.php-version }}
           extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml
+        env:
+          GITHUB_TOKEN: ${{ secrets.repository_token }}
+          COMPOSER_AUTH_JSON: |
+            ${{ secrets.composer_auth_json }}
 
       - name: Shutdown Ubuntu MySQL (SUDO)
         run: sudo service mysql stop
