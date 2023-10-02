@@ -119,7 +119,7 @@ jobs:
 
       - name: Update composer dependencies
         id: composer-update
-        run: echo "commit_body=$(composer update --no-scripts | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1)" >> $GITHUB_OUTPUT
+        run: echo "commit_body=$(composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1)" >> $GITHUB_OUTPUT
 
       - name: Run Drupal updates
         run: vendor/bin/drush updb -y
@@ -130,6 +130,8 @@ jobs:
       - name: Generate composer diff
         id: composer-diff
         uses: IonBazan/composer-diff-action@v1
+        with:
+          base: ${{ github.sha }}
 
       - name: Check for GrumPHP
         id: check_grumphp
