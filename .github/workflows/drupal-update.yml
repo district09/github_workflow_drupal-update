@@ -122,7 +122,7 @@ jobs:
         run: |
           {
             echo "commit_body<<EOF"
-            composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1
+            composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
