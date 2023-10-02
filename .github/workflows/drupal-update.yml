@@ -119,7 +119,12 @@ jobs:
 
       - name: Update composer dependencies
         id: composer-update
-        run: echo "commit_body=$(composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1)" >> $GITHUB_OUTPUT
+        run: |
+          {
+            echo "commit_body<<EOF"
+            composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Run Drupal updates
         run: vendor/bin/drush updb -y
