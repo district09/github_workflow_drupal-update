@@ -131,6 +131,9 @@ jobs:
         id: composer-diff
         uses: IonBazan/composer-diff-action@v1
 
+      - name: Remove git commit hooks
+        run: vendor/bin/grumphp git:deinit
+
       - name: Create a pull request
         uses: peter-evans/create-pull-request@v5
         id: cpr
@@ -140,7 +143,7 @@ jobs:
             Update modules
 
             ${{ steps.composer-update.outputs.commit_body }}
-          committer: GitHub <noreply@github.com>
+          committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
           branch: feature/dependency-updates
