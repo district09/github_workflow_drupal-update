@@ -131,7 +131,14 @@ jobs:
         id: composer-diff
         uses: IonBazan/composer-diff-action@v1
 
+      - name: Check for GrumPHP
+        id: check_grumphp
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "vendor/bin/grumphp"
+
       - name: Remove git commit hooks
+        if: steps.check_grumphp.outputs.files_exists == 'true'
         run: vendor/bin/grumphp git:deinit
 
       - name: Create a pull request
