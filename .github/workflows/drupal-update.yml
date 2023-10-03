@@ -137,6 +137,7 @@ jobs:
         uses: IonBazan/composer-diff-action@v1
         with:
           base: ${{ github.sha }}
+          with-links: true
 
       - name: Check for GrumPHP
         id: check_grumphp
