@@ -112,7 +112,7 @@ jobs:
         run: composer install --no-scripts
 
       - name: Install Drupal
-        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --config-import
+        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --force --existing-config --config-import
 
       - name: Execute config import
         run: vendor/bin/drush cim -y
