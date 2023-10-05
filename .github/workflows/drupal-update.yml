@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: ../config/sync
+      drupal-extra-settings:
+        description: Extra settings to add to settings.php. Do not include opening php tag.
+        required: false
+        type: string
+        default: ''
       php-version:
         description: The PHP version to run on
         required: false
@@ -106,6 +111,8 @@ jobs:
             $settings['entity_update_batch_size'] = 50;
             $settings['entity_update_backup'] = TRUE;
             $settings['migrate_node_migrate_type_classic'] = FALSE;
+
+            ${{ inputs.drupal-extra-settings }}
           write-mode: overwrite
 
       - name: Composer install
