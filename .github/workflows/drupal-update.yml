@@ -36,6 +36,14 @@ on:
         description: The repman host for composer, if applicable
         required: false
         type: string
+      use-existing-config:
+        description: >
+          Drupal install profiles with a hook_install cannot be installed with
+          the --existing-config flag. You can set this parameter to disable it,
+          defaults to true (enabled).
+        required: false
+        type: boolean
+        default: true
 
     secrets:
       repository_token:
@@ -119,7 +127,7 @@ jobs:
         run: composer install --no-scripts
 
       - name: Install Drupal
-        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --force --existing-config --config-import
+        run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --force ${{ inputs.use-existing-config && '--existing-config' || '' }} --config-import
 
       - name: Execute config import
         run: vendor/bin/drush cim -y
