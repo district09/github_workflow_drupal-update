@@ -142,7 +142,8 @@ jobs:
           } >> $GITHUB_OUTPUT
 
       - name: "Run composer normalize"
-        uses: "docker://ergebnis/composer-normalize-action:latest"
+        id: composer-normalize
+        run: 'composer normalize'
 
       - name: Run Drupal updates
         run: vendor/bin/drush updb -y
