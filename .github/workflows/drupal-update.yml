@@ -141,6 +141,9 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
+      - name: "Run composer normalize"
+        uses: "docker://ergebnis/composer-normalize-action:latest"
+
       - name: Run Drupal updates
         run: vendor/bin/drush updb -y
 
