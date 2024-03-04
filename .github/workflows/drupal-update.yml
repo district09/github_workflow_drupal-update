@@ -169,7 +169,7 @@ jobs:
         run: vendor/bin/grumphp git:deinit
 
       - name: Create a pull request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         id: cpr
         with:
           token: ${{ secrets.repository_token }}
