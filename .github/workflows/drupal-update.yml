@@ -32,7 +32,6 @@ on:
         description: The branch to check for updates, defaults to the default branch
         required: false
         type: string
-        default: master
       repman-host:
         description: The repman host for composer, if applicable
         required: false
@@ -168,16 +167,6 @@ jobs:
       - name: Remove git commit hooks
         if: steps.check_grumphp.outputs.files_exists == 'true'
         run: vendor/bin/grumphp git:deinit
-        
-      - name: 'Get Previous tag'
-        id: previoustag
-        uses: "WyriHaximus/github-action-get-previous-tag@v1"
-
-      - name: 'Get next minor version'
-        id: semvers
-        uses: "WyriHaximus/github-action-next-semvers@v1"
-        with:
-          version: ${{ steps.previoustag.outputs.tag }}
 
       - name: Create a pull request
         uses: peter-evans/create-pull-request@v6
@@ -191,9 +180,8 @@ jobs:
           committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
-          branch: hotfix/${{ steps.semvers.outputs.patch }}
-          base: ${{ inputs.branch }}
-          delete-branch: false
+          branch: feature/dependency-updates
+          delete-branch: true
           title: Update modules
           body: |
             ${{ steps.composer-update.outputs.commit_body }}
