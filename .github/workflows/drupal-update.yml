@@ -32,6 +32,7 @@ on:
         description: The branch to check for updates, defaults to the default branch
         required: false
         type: string
+        default: master
       repman-host:
         description: The repman host for composer, if applicable
         required: false
@@ -61,6 +62,17 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+      - name: 'Get next minor version'
+        id: semvers
+        uses: "WyriHaximus/github-action-next-semvers@v1"
+        with:
+          version: ${{ steps.previoustag.outputs.tag }}
 
       - name: Set composer auth JSON
         id: auth-json
@@ -180,8 +192,9 @@ jobs:
           committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
-          branch: feature/dependency-updates
-          delete-branch: true
+          branch: hotfix/${{ steps.semvers.outputs.patch }}
+          base: ${{ inputs.branch }}
+          delete-branch: false
           title: Update modules
           body: |
             ${{ steps.composer-update.outputs.commit_body }}
