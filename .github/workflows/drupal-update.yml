@@ -189,8 +189,6 @@ jobs:
             Update modules
 
             ${{ steps.composer-update.outputs.commit_body }}
-          committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           signoff: false
           branch: hotfix/${{ steps.semvers.outputs.patch }}
           base: ${{ inputs.branch }}
