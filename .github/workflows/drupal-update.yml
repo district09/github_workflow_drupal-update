@@ -150,7 +150,9 @@ jobs:
           {
             echo "commit_body<<EOF"
             composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
+            COMPOSERSTATUS=${PIPESTATUS[0]}
             echo "EOF"
+            exit $COMPOSERSTATUS
           } >> $GITHUB_OUTPUT
 
       - name: "Run composer normalize"
