@@ -147,18 +147,21 @@ jobs:
       - name: Update composer dependencies
         id: composer-update
         run: |
-          {
-            echo "commit_body<<EOF"
-            composer update --no-scripts 2>&1 | tee composer_output.txt | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
-            COMPOSERSTATUS=${PIPESTATUS[0]}
-            echo "EOF"
-            if [ $COMPOSERSTATUS -ne 0 ]; then 
-              cat composer_output.txt
-              rm composer_output.txt
-              exit $COMPOSERSTATUS; 
-            fi
-            rm composer_output.txt
-          } >> $GITHUB_OUTPUT
+          echo "Running composer update..."
+          output=$(composer update --no-scripts 2>&1)
+          composer_exit_code=$?
+      
+          # If composer update fails, exit with a non-zero status
+          if [ $composer_exit_code -ne 0 ]; then
+            echo "Composer update failed"
+            echo "$output"
+            exit $composer_exit_code
+          fi
+      
+          # Process output if successful
+          echo "commit_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$output" | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: "Run composer normalize"
         id: composer-normalize
