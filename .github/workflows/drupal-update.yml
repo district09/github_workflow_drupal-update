@@ -159,6 +159,8 @@ jobs:
           fi
 
           echo "✓ Composer update successful"
+          echo "$output"
+
           # Process output if successful
           echo "commit_body<<EOF" >> $GITHUB_OUTPUT
           echo "$output" | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g' >> $GITHUB_OUTPUT
