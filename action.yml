@@ -72,6 +72,7 @@ runs:
     - name: Set composer auth JSON
       id: auth-json
       if: inputs.repman-host != ''
+      shell: bash
       run: |
         echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ inputs.composer_repman_token }}\"}}}" >> $GITHUB_OUTPUT
 
@@ -86,6 +87,7 @@ runs:
           ${{ steps.auth-json.outputs.auth_json }}
 
     - name: Shutdown Ubuntu MySQL (SUDO)
+      shell: bash
       run: sudo service mysql stop
 
     - name: Setup MySQL
@@ -131,16 +133,20 @@ runs:
         write-mode: overwrite
 
     - name: Composer install
+      shell: bash
       run: composer install --no-scripts
 
     - name: Install Drupal
+      shell: bash
       run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --force ${{ inputs.use-existing-config && '--existing-config' || '' }} --config-import
 
     - name: Execute config import
+      shell: bash
       run: vendor/bin/drush cim -y
 
     - name: Update composer dependencies
       id: composer-update
+      shell: bash
       run: |
         {
           echo "commit_body<<EOF"
@@ -150,12 +156,15 @@ runs:
 
     - name: "Run composer normalize"
       id: composer-normalize
+      shell: bash
       run: 'composer normalize --no-scripts'
 
     - name: Run Drupal updates
+      shell: bash
       run: vendor/bin/drush updb -y
 
     - name: Export config after updates
+      shell: bash
       run: vendor/bin/drush cex -y
 
     - name: Generate composer diff
@@ -173,6 +182,7 @@ runs:
 
     - name: Remove git commit hooks
       if: steps.check_grumphp.outputs.files_exists == 'true'
+      shell: bash
       run: vendor/bin/grumphp git:deinit
 
     - name: Create a pull request
