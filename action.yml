@@ -1,0 +1,223 @@
+name: Update drupal project
+
+inputs:
+  drupal-install-profile:
+    description: The install profile to use when installing Drupal
+    required: false
+    type: string
+    default: minimal
+  drupal-web-root:
+    description: The web root (relative to the workspace root)
+    required: false
+    type: string
+    default: web
+  drupal-config-path:
+    description: The config sync path (relative to the web root)
+    required: false
+    type: string
+    default: ../config/sync
+  drupal-extra-settings:
+    description: Extra settings to add to settings.php. Do not include opening php tag.
+    required: false
+    type: string
+    default: ''
+  php-version:
+    description: The PHP version to run on
+    required: false
+    type: string
+    default: 8.1
+  branch:
+    description: The branch to check for updates, defaults to the default branch
+    required: false
+    type: string
+    default: master
+  repman-host:
+    description: The repman host for composer, if applicable
+    required: false
+    type: string
+  use-existing-config:
+    description: >
+      Drupal install profiles with a hook_install cannot be installed with
+      the --existing-config flag. You can set this parameter to disable it,
+      defaults to true (enabled).
+    required: false
+    type: boolean
+    default: true
+  repository_token:
+    required: true
+  composer_repman_token:
+    required: false
+  composer_github_token:
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.branch }}
+        fetch-depth: 0
+
+    - name: 'Get Previous tag'
+      id: previoustag
+      uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+    - name: 'Get next minor version'
+      id: semvers
+      uses: "WyriHaximus/github-action-next-semvers@v1"
+      with:
+        version: ${{ steps.previoustag.outputs.tag }}
+
+    - name: Set composer auth JSON
+      id: auth-json
+      if: inputs.repman-host != ''
+      shell: bash
+      run: |
+        echo "auth_json={\"http-basic\":{\"${{ inputs.repman-host }}\":{\"username\": \"token\", \"password\": \"${{ inputs.composer_repman_token }}\"}}}" >> $GITHUB_OUTPUT
+
+    - name: Setup PHP and composer
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ inputs.php-version }}
+        extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml
+      env:
+        GITHUB_TOKEN: ${{ inputs.composer_github_token }}
+        COMPOSER_AUTH_JSON: |
+          ${{ steps.auth-json.outputs.auth_json }}
+
+    - name: Shutdown Ubuntu MySQL (SUDO)
+      shell: bash
+      run: sudo service mysql stop
+
+    - name: Setup MySQL
+      uses: mirromutth/mysql-action@v1.1
+      with:
+        host port: 3306
+        mysql version: 8.0
+        mysql database: drupal
+        mysql user: drupal
+        mysql password: drupal
+
+    - name: Create settings.php
+      uses: DamianReeves/write-file-action@master
+      with:
+        path: ${{ github.workspace }}/${{ inputs.drupal-web-root }}/sites/default/settings.php
+        contents: |
+          <?php
+
+          $databases = [];
+          $databases['default']['default'] = [
+            'database' => 'drupal',
+            'username' => 'drupal',
+            'password' => 'drupal',
+            'host' => '127.0.0.1',
+            'port' => '3306',
+            'driver' => 'mysql',
+            'prefix' => '',
+            'collation' => 'utf8mb4_general_ci',
+          ];
+          $settings['config_sync_directory'] = '${{ inputs.drupal-config-path }}';
+          $settings['hash_salt'] = '${{ github.sha }}';
+          $settings['update_free_access'] = FALSE;
+          $settings['container_yamls'][] = $app_root . '/' . $site_path . '/services.yml';
+          $settings['file_scan_ignore_directories'] = [
+            'node_modules',
+            'bower_components',
+          ];
+          $settings['entity_update_batch_size'] = 50;
+          $settings['entity_update_backup'] = TRUE;
+          $settings['migrate_node_migrate_type_classic'] = FALSE;
+
+          ${{ inputs.drupal-extra-settings }}
+        write-mode: overwrite
+
+    - name: Composer install
+      shell: bash
+      run: composer install --no-scripts
+
+    - name: Install Drupal
+      shell: bash
+      run: vendor/bin/robo digipolis:install-drupal8 ${{ inputs.drupal-install-profile }} --force ${{ inputs.use-existing-config && '--existing-config' || '' }} --config-import
+
+    - name: Execute config import
+      shell: bash
+      run: vendor/bin/drush cim -y
+
+    - name: Update composer dependencies
+      id: composer-update
+      shell: bash
+      run: |
+        {
+          echo "commit_body<<EOF"
+          composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
+
+    - name: "Run composer normalize"
+      id: composer-normalize
+      shell: bash
+      run: 'composer normalize --no-scripts'
+
+    - name: Run Drupal updates
+      shell: bash
+      run: vendor/bin/drush updb -y
+
+    - name: Export config after updates
+      shell: bash
+      run: vendor/bin/drush cex -y
+
+    - name: Generate composer diff
+      id: composer-diff
+      uses: IonBazan/composer-diff-action@v1
+      with:
+        base: ${{ github.sha }}
+        with-links: true
+
+    - name: Check for GrumPHP
+      id: check_grumphp
+      uses: andstor/file-existence-action@v2
+      with:
+        files: "vendor/bin/grumphp"
+
+    - name: Remove git commit hooks
+      if: steps.check_grumphp.outputs.files_exists == 'true'
+      shell: bash
+      run: vendor/bin/grumphp git:deinit
+
+    - name: Create a pull request
+      uses: peter-evans/create-pull-request@v6
+      id: cpr
+      with:
+        token: ${{ inputs.repository_token }}
+        commit-message: |
+          Update modules
+
+          ${{ steps.composer-update.outputs.commit_body }}
+        committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        signoff: false
+        branch: hotfix/${{ steps.semvers.outputs.patch }}
+        base: ${{ inputs.branch }}
+        delete-branch: false
+        title: Update modules
+        body: |
+          ${{ steps.composer-update.outputs.commit_body }}
+        labels: |
+          updates
+          automated pr
+        draft: true
+
+    - name: Add composer.lock diff as PR comment
+      uses: marocchino/sticky-pull-request-comment@v2
+      if: ${{ steps.cpr.outputs.pull-request-number }}
+      with:
+        header: composer-diff
+        number: ${{ steps.cpr.outputs.pull-request-number }}
+        message: |
+          <details>
+          <summary>Composer package changes</summary>
+
+          ${{ steps.composer-diff.outputs.composer_diff }}
+
+          </details>
