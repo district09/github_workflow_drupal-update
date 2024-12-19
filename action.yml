@@ -150,7 +150,7 @@ runs:
       run: |
         {
           echo "commit_body<<EOF"
-          composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
+          composer update --no-scripts 2>&1 | grep -Pzo 'Lock file operations.*(\n|.)*Writing lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g' || echo "EOF"
           echo "EOF"
         } >> $GITHUB_OUTPUT
 
