@@ -49,6 +49,20 @@ inputs:
     required: false
   composer_github_token:
     required: false
+  committer:
+    description: >
+      The committer name and email address in the format `Display Name <email@address.com>`.
+      Defaults to the GitHub Actions bot user.
+    required: false
+    type: string
+    default: ''
+  author:
+    description: >
+      The committer name and email address in the format `Display Name <email@address.com>`.
+      Defaults to the user who triggered the workflow run.
+    required: false
+    type: string
+    default: ''
 
 runs:
   using: 'composite'
@@ -185,17 +199,86 @@ runs:
       shell: bash
       run: vendor/bin/grumphp git:deinit
 
-    - name: Create a pull request
+    - name: Create a pull request with committer and author
+      if: ${{ inputs.committer != '' && inputs.author != '' }}
       uses: peter-evans/create-pull-request@v6
       id: cpr
       with:
-        token: ${{ inputs.repository_token }}
+        token: ${{ secrets.repository_token }}
         commit-message: |
           Update modules
 
           ${{ steps.composer-update.outputs.commit_body }}
-        committer: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-        author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+        signoff: false
+        branch: hotfix/${{ steps.semvers.outputs.patch }}
+        base: ${{ inputs.branch }}
+        delete-branch: false
+        title: Update modules
+        body: |
+          ${{ steps.composer-update.outputs.commit_body }}
+        labels: |
+          updates
+          automated pr
+        draft: true
+        committer: ${{ inputs.committer }}
+        author: ${{ inputs.author }}
+
+    - name: Create a pull request with only committer
+      if: ${{ inputs.committer != '' && inputs.author == '' }}
+      uses: peter-evans/create-pull-request@v6
+      id: cpr
+      with:
+        token: ${{ secrets.repository_token }}
+        commit-message: |
+          Update modules
+
+          ${{ steps.composer-update.outputs.commit_body }}
+        signoff: false
+        branch: hotfix/${{ steps.semvers.outputs.patch }}
+        base: ${{ inputs.branch }}
+        delete-branch: false
+        title: Update modules
+        body: |
+          ${{ steps.composer-update.outputs.commit_body }}
+        labels: |
+          updates
+          automated pr
+        draft: true
+        committer: ${{ inputs.committer }}
+
+    - name: Create a pull request with only author
+      if: ${{ inputs.committer == '' && inputs.author != '' }}
+      uses: peter-evans/create-pull-request@v6
+      id: cpr
+      with:
+        token: ${{ secrets.repository_token }}
+        commit-message: |
+          Update modules
+
+          ${{ steps.composer-update.outputs.commit_body }}
+        signoff: false
+        branch: hotfix/${{ steps.semvers.outputs.patch }}
+        base: ${{ inputs.branch }}
+        delete-branch: false
+        title: Update modules
+        body: |
+          ${{ steps.composer-update.outputs.commit_body }}
+        labels: |
+          updates
+          automated pr
+        draft: true
+        author: ${{ inputs.author }}
+        
+    - name: Create a pull request with default committer and author
+      if: ${{ inputs.committer == '' && inputs.author == '' }}
+      uses: peter-evans/create-pull-request@v6
+      id: cpr
+      with:
+        token: ${{ secrets.repository_token }}
+        commit-message: |
+          Update modules
+
+          ${{ steps.composer-update.outputs.commit_body }}
         signoff: false
         branch: hotfix/${{ steps.semvers.outputs.patch }}
         base: ${{ inputs.branch }}
