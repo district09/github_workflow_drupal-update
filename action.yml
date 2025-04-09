@@ -199,12 +199,12 @@ runs:
       shell: bash
       run: vendor/bin/grumphp git:deinit
 
-    - name: Create a pull request with committer and author
+    - name: Create a pull request
       if: ${{ inputs.committer != '' && inputs.author != '' }}
       uses: peter-evans/create-pull-request@v6
       id: cpr
       with:
-        token: ${{ secrets.repository_token }}
+        token: ${{ inputs.repository_token }}
         commit-message: |
           Update modules
 
@@ -220,76 +220,8 @@ runs:
           updates
           automated pr
         draft: true
-        committer: ${{ inputs.committer }}
-        author: ${{ inputs.author }}
-
-    - name: Create a pull request with only committer
-      if: ${{ inputs.committer != '' && inputs.author == '' }}
-      uses: peter-evans/create-pull-request@v6
-      id: cpr
-      with:
-        token: ${{ secrets.repository_token }}
-        commit-message: |
-          Update modules
-
-          ${{ steps.composer-update.outputs.commit_body }}
-        signoff: false
-        branch: hotfix/${{ steps.semvers.outputs.patch }}
-        base: ${{ inputs.branch }}
-        delete-branch: false
-        title: Update modules
-        body: |
-          ${{ steps.composer-update.outputs.commit_body }}
-        labels: |
-          updates
-          automated pr
-        draft: true
-        committer: ${{ inputs.committer }}
-
-    - name: Create a pull request with only author
-      if: ${{ inputs.committer == '' && inputs.author != '' }}
-      uses: peter-evans/create-pull-request@v6
-      id: cpr
-      with:
-        token: ${{ secrets.repository_token }}
-        commit-message: |
-          Update modules
-
-          ${{ steps.composer-update.outputs.commit_body }}
-        signoff: false
-        branch: hotfix/${{ steps.semvers.outputs.patch }}
-        base: ${{ inputs.branch }}
-        delete-branch: false
-        title: Update modules
-        body: |
-          ${{ steps.composer-update.outputs.commit_body }}
-        labels: |
-          updates
-          automated pr
-        draft: true
-        author: ${{ inputs.author }}
-        
-    - name: Create a pull request with default committer and author
-      if: ${{ inputs.committer == '' && inputs.author == '' }}
-      uses: peter-evans/create-pull-request@v6
-      id: cpr
-      with:
-        token: ${{ secrets.repository_token }}
-        commit-message: |
-          Update modules
-
-          ${{ steps.composer-update.outputs.commit_body }}
-        signoff: false
-        branch: hotfix/${{ steps.semvers.outputs.patch }}
-        base: ${{ inputs.branch }}
-        delete-branch: false
-        title: Update modules
-        body: |
-          ${{ steps.composer-update.outputs.commit_body }}
-        labels: |
-          updates
-          automated pr
-        draft: true
+        committer: ${{ inputs.committer != '' && inputs.committer || github.actor }} <${{ inputs.committer != '' && inputs.committer || github.actor }}@users.noreply.github.com>
+        author: ${{ inputs.author != '' && inputs.author || github.actor }} <${{ inputs.author != '' && inputs.author || github.actor }}@users.noreply.github.com>
 
     - name: Add composer.lock diff as PR comment
       uses: marocchino/sticky-pull-request-comment@v2
