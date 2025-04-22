@@ -163,10 +163,20 @@ runs:
       shell: bash
       run: |
         {
-          echo "commit_body<<EOF"
-          composer update --no-scripts 2>&1 | grep -Pzo '(Lock file operations.*(\n|.)*Writing lock file)|Nothing to modify in lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
-          echo "EOF"
+          echo "composer_update<<EOF"
+          composer update --no-scripts 2>&1
+          echo "EOF" 
         } >> $GITHUB_OUTPUT
+
+    - name: Parse commit body
+      id: commit-body
+      shell: bash
+      run: |
+        {
+          echo "commit_body<<EOF"
+          echo "${{ steps.composer-update.outputs.composer_update }}" | grep -Pzo '(Lock file operations.*(\n|.)*Writing lock file)|Nothing to modify in lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
+          echo "EOF"
+        } 
 
     - name: "Run composer normalize"
       id: composer-normalize
@@ -200,7 +210,6 @@ runs:
       run: vendor/bin/grumphp git:deinit
 
     - name: Create a pull request
-      if: ${{ inputs.committer != '' && inputs.author != '' }}
       uses: peter-evans/create-pull-request@v6
       id: cpr
       with:
@@ -208,14 +217,14 @@ runs:
         commit-message: |
           Update modules
 
-          ${{ steps.composer-update.outputs.commit_body }}
+          ${{ steps.commit-body.outputs.commit_body }}
         signoff: false
         branch: hotfix/${{ steps.semvers.outputs.patch }}
         base: ${{ inputs.branch }}
         delete-branch: false
         title: Update modules
         body: |
-          ${{ steps.composer-update.outputs.commit_body }}
+          ${{ steps.commit-body.outputs.commit_body }}
         labels: |
           updates
           automated pr
