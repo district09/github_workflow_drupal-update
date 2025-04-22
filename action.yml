@@ -210,7 +210,6 @@ runs:
       run: vendor/bin/grumphp git:deinit
 
     - name: Create a pull request
-      if: ${{ inputs.committer != '' && inputs.author != '' }}
       uses: peter-evans/create-pull-request@v6
       id: cpr
       with:
