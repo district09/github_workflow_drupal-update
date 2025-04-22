@@ -174,7 +174,7 @@ runs:
       run: |
         {
           echo "commit_body<<EOF"
-          echo ${{ steps.composer-update.outputs.composer_update }} | grep -Pzo '(Lock file operations.*(\n|.)*Writing lock file)|Nothing to modify in lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
+          echo "${{ steps.composer-update.outputs.composer_update }}" | grep -Pzo '(Lock file operations.*(\n|.)*Writing lock file)|Nothing to modify in lock file' | tail -n +2 | head -n -1 | sed -r 's/ +?- ([^ ]+) //g'
           echo "EOF"
         } 
 
