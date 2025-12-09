@@ -94,7 +94,7 @@ runs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ inputs.php-version }}
-        extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml
+        extensions: date, dom, filter, gd, hash, json, pcre, pdo, session, simplexml, spl, tokenizer, xml, :redis
       env:
         GITHUB_TOKEN: ${{ inputs.composer_github_token }}
         COMPOSER_AUTH_JSON: |
