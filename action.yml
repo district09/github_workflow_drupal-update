@@ -1,4 +1,5 @@
 name: Update drupal project
+description: Updates drupal projects
 
 inputs:
   drupal-install-profile:
@@ -105,12 +106,31 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y mysql-server
-    
+
     - name: Start MySQL
       shell: bash
       run: |
-        sudo systemctl start mysql
+        sudo systemctl stop mysql
+
+    - name: Reset MySQL root access (force)
+      shell: bash
+      run: |    
+        sudo mysqld_safe --skip-grant-tables --skip-networking &
+        sleep 5
     
+        mysql <<EOF
+        FLUSH PRIVILEGES;
+        ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+        FLUSH PRIVILEGES;
+        EOF
+    
+        # Kill unsafe instance
+        sudo killall mysqld || true
+        sleep 2
+    
+        # Restart normally
+        sudo systemctl start mysql
+
     - name: Wait for MySQL (with timeout)
       shell: bash
       run: |
@@ -128,14 +148,6 @@ runs:
         sudo systemctl status mysql || true
         exit 1
 
-    - name: Ensure predictable MySQL access
-      shell: bash
-      run: |
-        sudo mysql --protocol=socket <<EOF
-        ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
-        FLUSH PRIVILEGES;
-        EOF
-    
     - name: Configure database
       shell: bash
       run: |
