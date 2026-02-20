@@ -71,6 +71,19 @@ on:
 jobs:
   update_drupal:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -104,17 +117,20 @@ jobs:
           COMPOSER_AUTH_JSON: |
             ${{ steps.auth-json.outputs.auth_json }}
 
-      - name: Shutdown Ubuntu MySQL (SUDO)
-        run: sudo service mysql stop
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h "127.0.0.1" -proot --silent; do
+            sleep 2
+          done
 
-      - name: Setup MySQL
-        uses: mirromutth/mysql-action@v1.1
-        with:
-          host port: 3306
-          mysql version: 8.0
-          mysql database: drupal
-          mysql user: drupal
-          mysql password: drupal
+      - name: Create DB and User
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot <<EOF
+          CREATE DATABASE drupal;
+          CREATE USER 'drupal'@'%' IDENTIFIED BY 'drupal';
+          GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'%';
+          FLUSH PRIVILEGES;
+          EOF
 
       - name: Create settings.php
         uses: DamianReeves/write-file-action@master
