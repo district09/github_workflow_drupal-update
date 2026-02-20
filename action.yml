@@ -101,58 +101,16 @@ runs:
         COMPOSER_AUTH_JSON: |
           ${{ steps.auth-json.outputs.auth_json }}
 
-    - name: Install MySQL
+    - name: Set up MySQL
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get install -y mysql-server
-    
-    - name: Configure MySQL root & database
-      shell: bash
-      run: |
-        sudo systemctl stop mysql
-        sudo mkdir -p /var/run/mysqld
-        sudo chown mysql:mysql /var/run/mysqld
-        
-        # Start with skip-grant-tables in background
-        sudo -u mysql mysqld --skip-grant-tables --skip-networking --daemonize
-        sleep 3
-        
-        # Now connect via socket as root (no password needed with skip-grant-tables)
-        sudo mysql --protocol=socket --socket=/var/run/mysqld/mysqld.sock <<EOF
-        FLUSH PRIVILEGES;
-        ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
-        CREATE DATABASE IF NOT EXISTS drupal;
-        CREATE USER IF NOT EXISTS 'drupal'@'%' IDENTIFIED BY 'drupal';
-        GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'%';
-        FLUSH PRIVILEGES;
-        EOF
-        
-        # Shut down unsafe instance and restart normally
-        sudo mysqladmin --protocol=socket --socket=/var/run/mysqld/mysqld.sock shutdown
-        sleep 2
-        sudo systemctl start mysql
-    
-    - name: Wait for MySQL (with timeout)
-      shell: bash
-      run: |
-        ATTEMPTS=5
-        for i in $(seq 1 $ATTEMPTS); do
-          if mysqladmin ping -h "127.0.0.1" -u root -proot --silent 2>/dev/null; then
-            echo "MySQL is up!"
-            exit 0
-          fi
-          echo "Waiting for MySQL... ($i/$ATTEMPTS)"
-          sleep 5
-        done
-        echo "MySQL did not start in time"
-        sudo systemctl status mysql || true
-        exit 1
+        sudo systemctl start mysql.service
+        until sudo mysqladmin ping --silent; do sleep 1; done
 
     - name: Configure database
       shell: bash
       run: |
-        mysql -u -proot <<EOF
+        mysql -u root -proot <<EOF
         CREATE DATABASE IF NOT EXISTS drupal;
         CREATE USER IF NOT EXISTS 'drupal'@'%' IDENTIFIED BY 'drupal';
         GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'%';
