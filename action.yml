@@ -100,18 +100,43 @@ runs:
         COMPOSER_AUTH_JSON: |
           ${{ steps.auth-json.outputs.auth_json }}
 
-    - name: Shutdown Ubuntu MySQL (SUDO)
+    - name: Install MySQL
       shell: bash
-      run: sudo service mysql stop
-
-    - name: Setup MySQL
-      uses: mirromutth/mysql-action@v1.1
-      with:
-        host port: 3306
-        mysql version: 8.0
-        mysql database: drupal
-        mysql user: drupal
-        mysql password: drupal
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mysql-server
+    
+    - name: Start MySQL
+      shell: bash
+      run: |
+        sudo systemctl start mysql
+    
+    - name: Wait for MySQL (with timeout)
+      shell: bash
+      run: |
+        ATTEMPTS=5
+        for i in $(seq 1 $ATTEMPTS); do
+          if mysqladmin ping -h "127.0.0.1" --silent; then
+            echo "MySQL is up!"
+            exit 0
+          fi
+          echo "Waiting for MySQL... ($i/$ATTEMPTS)"
+          sleep 5
+        done
+    
+        echo "MySQL did not start in time"
+        sudo systemctl status mysql || true
+        exit 1
+    
+    - name: Configure database
+      shell: bash
+      run: |
+        sudo mysql <<EOF
+        CREATE DATABASE IF NOT EXISTS drupal;
+        CREATE USER IF NOT EXISTS 'drupal'@'%' IDENTIFIED BY 'drupal';
+        GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'%';
+        FLUSH PRIVILEGES;
+        EOF
 
     - name: Create settings.php
       uses: DamianReeves/write-file-action@master
