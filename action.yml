@@ -106,44 +106,33 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y mysql-server
-
-    - name: Start MySQL
+    
+    - name: Configure MySQL root & database
       shell: bash
       run: |
-        sudo systemctl stop mysql
-
-    - name: Reset MySQL root access (force)
-      shell: bash
-      run: |    
-        sudo mysqld_safe --skip-grant-tables --skip-networking &
-        sleep 5
-    
-        mysql <<EOF
-        FLUSH PRIVILEGES;
-        ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
+        # MySQL on Ubuntu starts automatically after install, but uses auth_socket for root.
+        # Connect via sudo to bypass password requirement entirely.
+        sudo systemctl start mysql
+        sudo mysql -u root <<EOF
+        ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
+        CREATE DATABASE IF NOT EXISTS drupal;
+        CREATE USER IF NOT EXISTS 'drupal'@'%' IDENTIFIED BY 'drupal';
+        GRANT ALL PRIVILEGES ON drupal.* TO 'drupal'@'%';
         FLUSH PRIVILEGES;
         EOF
     
-        # Kill unsafe instance
-        sudo killall mysqld || true
-        sleep 2
-    
-        # Restart normally
-        sudo systemctl start mysql
-
     - name: Wait for MySQL (with timeout)
       shell: bash
       run: |
         ATTEMPTS=5
         for i in $(seq 1 $ATTEMPTS); do
-          if mysqladmin ping -h "127.0.0.1" --silent; then
+          if mysqladmin ping -h "127.0.0.1" -u root -proot --silent 2>/dev/null; then
             echo "MySQL is up!"
             exit 0
           fi
           echo "Waiting for MySQL... ($i/$ATTEMPTS)"
           sleep 5
         done
-    
         echo "MySQL did not start in time"
         sudo systemctl status mysql || true
         exit 1
