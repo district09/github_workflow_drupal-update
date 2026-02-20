@@ -129,6 +129,7 @@ runs:
         exit 1
 
     - name: Ensure predictable MySQL access
+      shell: bash
       run: |
         sudo mysql --protocol=socket <<EOF
         ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
