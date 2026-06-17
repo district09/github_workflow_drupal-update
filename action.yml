@@ -168,7 +168,7 @@ runs:
       run: |
         {
           echo "composer_update<<EOF"
-          composer update --no-scripts 2>&1
+          composer update --no-scripts --bump-after-update 2>&1
           echo "EOF" 
         } >> $GITHUB_OUTPUT
 
