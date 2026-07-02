@@ -168,9 +168,10 @@ runs:
       run: |
         {
           echo "composer_update<<EOF"
-          composer update --no-scripts --bump-after-update 2>&1
-          echo "EOF" 
+          composer update --no-scripts --bump-after-update 2>&1 || COMPOSER_EXIT=$?
+          echo "EOF"
         } >> $GITHUB_OUTPUT
+        exit "${COMPOSER_EXIT:-0}"
 
     - name: Parse commit body
       id: commit-body
